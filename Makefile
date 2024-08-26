@@ -7,7 +7,7 @@ SRC_DIR = src
 OBJ_DIR = objects
 INCLUDE_DIR = include
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -fPIC -I$(INCLUDE_DIR)
+CFLAGS = -Wall -Wextra -Werror -fPIC -I$(INCLUDE_DIR) -I$(LIBFT_DIR)
 # The -shared flag instructs the linker to create a shared library 
 # (also known as a dynamic library or a shared object).
 # Shared Library: A shared library is a collection of precompiled functions (object code) 
@@ -18,7 +18,7 @@ LDFLAGS = -shared
 VPATH = $(SRC_DIR)
 
 # Source files
-SRCS = malloc.c # free.c realloc.c show_alloc_mem.c utils.c
+SRCS = malloc.c free.c show_alloc_mem.c realloc.c utils.c
 OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS))
 
 # Hosttype

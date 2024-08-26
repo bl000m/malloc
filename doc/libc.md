@@ -25,7 +25,6 @@ glibc (GNU C Library): The most common implementation used in Linux distribution
 ``` 
 File Operations:
 c
-Copier le code
 #include <stdio.h>
 
 FILE *file = fopen("example.txt", "r");
@@ -38,7 +37,6 @@ if (file) {
 }
 Memory Management:
 c
-Copier le code
 #include <stdlib.h>
 
 int *arr = malloc(10 * sizeof(int));
