@@ -91,6 +91,6 @@ void *BLOCK_SHIFT(t_block *block);
 void *zone_SHIFT(t_zone *zone);
 size_t get_zone_size_from_zone_type(e_zone zone_type);
 size_t get_zone_type_from_block_size(const size_t size);
-
+void *append_empty_block(t_zone *zone, size_t size);
 
 #endif // MALLOC_H

@@ -17,7 +17,8 @@ void *malloc(size_t size) {
     zone = get_zone_for_needed_block((const size_t)size);
     if (!zone)
         return NULL;
-    // memory_address_allocated = 
+    memory_address_allocated = append_empty_block(zone, size);
+    // log_stack
     return memory_address_allocated;  
 }
 
@@ -127,20 +128,23 @@ t_zone *get_last_zone(t_zone *zone) {
 ** Adjusts the zone's free size accordingly and returns a pointer to the new block's data area.
 */
 void *append_empty_block(t_zone *zone, size_t size) {
-    t_block *new_block = (t_block *)zone_SHIFT(zone);
+    t_block *new_block = (t_block *)((void *)zone + sizeof(t_zone));
     t_block *last_block = (zone->block_count) ? get_last_block(new_block) : NULL;
 
     if (last_block) {
-        new_block = (t_block *)(BLOCK_SHIFT(last_block) + last_block->size);
+        new_block = (t_block *)((void *)last_block + sizeof(t_block))+ last_block->size;
         last_block->next = new_block;
         new_block->prev = last_block;
     }
+    new_block->prev = NULL;
+	new_block->next = NULL;
+	new_block->size = size;
+	new_block->free = false;
 
-    setup_block(new_block, size);
     zone->block_count++;
     zone->free_size -= (size + sizeof(t_block));
     
-    return BLOCK_SHIFT(new_block);
+    return ((void *)new_block + sizeof(t_block));
 }
 
 /*
