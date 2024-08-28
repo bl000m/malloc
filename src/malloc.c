@@ -1,161 +1,229 @@
 #include "malloc.h"
 
 // Define global variable
-t_malloc_manager g_malloc_manager = {0};
+t_zone *g_malloc_manager = {0};
 pthread_mutex_t g_malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
-void initialize_malloc_manager(void) {
-    g_malloc_manager.tiny_zones = NULL;
-    g_malloc_manager.small_zones = NULL;
-    g_malloc_manager.large_zones = NULL;
-    g_malloc_manager.initialized = 1;
-}
-
 void *malloc(size_t size) {
-    if (!g_malloc_manager.initialized) {
-        // pthread_mutex_lock(&g_malloc_mutex);
-        if (!g_malloc_manager.initialized) { // Double-checked locking
-            initialize_malloc_manager();
-        }
-        // pthread_mutex_unlock(&g_malloc_mutex);
-    }
+    t_zone *zone;
+    t_block *block;
+    void *memory_address_allocated;
 
-    // pthread_mutex_lock(&g_malloc_mutex);
-
+    if (size <= 0) return NULL;
     size = (size + 15) & ~15;
-
-    void *ptr = NULL;
-    if (size <= TINY) {
-        ptr = allocate_in_zone(&g_malloc_manager.tiny_zones, TINY_ZONE_SIZE, size);
-    } else if (size <= SMALL) {
-        ptr = allocate_in_zone(&g_malloc_manager.small_zones, SMALL_ZONE_SIZE, size);
-    } else {
-        ptr = allocate_large_block(&g_malloc_manager.large_zones, size);
-    }
-
-    // if (getenv("DEBUG_MALLOC")) {
-    //     show_alloc_mem();
-    // }
-    // pthread_mutex_unlock(&g_malloc_mutex);
-    return ptr;
-}
-
-void *allocate_in_zone(t_zone **zones, size_t zone_size, size_t size) {
-    // pthread_mutex_lock(&g_malloc_mutex);
-    t_zone *current_zone = *zones;
-    t_block *block = NULL;
-
-    while (current_zone) {
-        block = find_free_block(current_zone, size);
-        if (block) break;
-        current_zone = current_zone->next;
-    }
-
-    if (!block) {
-        t_zone *new_zone = create_zone(zone_size);
-        if (!new_zone) return NULL;
-        add_zone(zones, new_zone);
-        block = new_zone->blocks;
-    }
-
-    block->free = 0;
-    split_block(block, size);
-    // pthread_mutex_unlock(&g_malloc_mutex);
-    return (void*)(block + 1);
-}
-
-void *allocate_large_block(t_zone **zones, size_t size) {
-    // pthread_mutex_lock(&g_malloc_mutex);
-    size_t total_size = size + sizeof(t_block);
-    t_block *block = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (block == MAP_FAILED) {
-        // pthread_mutex_unlock(&g_malloc_mutex);
+    block = find_and_split_block_if_available(size);
+    return block ? (((void *)block + sizeof(t_block))) : NULL;
+    zone = get_zone_for_needed_block((const size_t)size);
+    if (!zone)
         return NULL;
-    }
+    // memory_address_allocated = 
+    return memory_address_allocated;  
+}
 
+t_block *find_and_split_block_if_available(size_t size)
+{
+    t_block *block;
+    t_zone *zone;
+
+    // Find an available block of the requested size
+    find_available_block(size, &zone, &block);
+
+    if (block && zone)
+    {
+        split_block_and_create_free_block(block, size, zone);
+        return block;
+    }
+    return NULL;
+}
+
+void split_block_and_create_free_block(t_block *block, size_t size, t_zone *zone)
+{
+    t_block *free_block;
+
+    // Calculate the position of the new free block
+    free_block = ((void *)block + sizeof(t_block)) + size;
+
+    // Set up the new free block with the remaining space
+    free_block->prev = NULL;
+	free_block->next = NULL;
+	free_block->size = block->next - free_block;
+	// free_block->free = false;
+    free_block->free = true;
+    free_block->prev = block;
+    free_block->next = block->next;
+    zone->block_count++;
+
+    // Update the original block to reflect the allocated size
+    block->next = free_block;
     block->size = size;
-    block->free = 0;
-    block->next = NULL;
-
-    t_zone *zone = mmap(NULL, sizeof(t_zone), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (zone == MAP_FAILED) {
-        munmap(block, total_size);
-        // pthread_mutex_unlock(&g_malloc_mutex);
-        return NULL;
-    }
-
-    zone->size = total_size;
-    zone->blocks = block;
-    zone->next = NULL;
-    zone->type = LARGE_ZONE;
-    add_zone(zones, zone);
-
-    // pthread_mutex_unlock(&g_malloc_mutex);
-    return (void*)(block + 1);
+    block->free = false;
 }
 
-t_zone *create_zone(size_t size) {
-    t_zone *zone = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (zone == MAP_FAILED) return NULL;
 
-    zone->size = size;
-    size_t alignment_offset = ((uintptr_t)(zone + 1) % 16 == 0) ? 0 : (16 - ((uintptr_t)(zone + 1) % 16));
-    zone->blocks = (t_block*)((char*)zone + sizeof(t_zone) + alignment_offset);
-
-    // Ensure there is enough space for the first block
-    size_t aligned_size = size - sizeof(t_zone) - alignment_offset;
-    zone->blocks->size = aligned_size - sizeof(t_block);
-    zone->blocks->free = 1;
-    zone->blocks->next = NULL;
-    zone->next = NULL;
-    if (size == TINY_ZONE_SIZE) {
-        zone->type = TINY_ZONE;
-    } else if (size == SMALL_ZONE_SIZE) {
-        zone->type = SMALL_ZONE;
-    } else {
-        zone->type = LARGE_ZONE;
+/*
+** Find an available zone in the list that belongs to the specified zone type
+** and has enough free space to accommodate the required block size.
+*/
+t_zone *find_available_zone(const t_zone *zone_list, const e_zone zone_type, const size_t required_size) {
+    t_zone *zone = (t_zone *)zone_list;
+    
+    while (zone) {
+        if (zone->type == zone_type && zone->size >= required_size) {
+            return zone;
+        }
+        zone = zone->next;
     }
+    return NULL;
+}
 
+/*
+** Retrieve or create a zone capable of holding a block of the given size.
+** If no existing zone is found, a new one is created and added to the zone list.
+*/
+t_zone *get_zone_for_needed_block(const size_t size) {
+    t_zone *default_zone;
+    e_zone zone_type;
+    t_zone *zone;
+
+    default_zone = g_malloc_manager;
+    zone_type = get_zone_type_from_block_size(size);
+    zone = find_available_zone(default_zone, zone_type, size + sizeof(t_block));
+
+    if (!zone) {
+        zone = create_zone(zone_type, size);
+        if (!zone) {
+            return NULL;
+        }
+
+        // Insert the new zone at the beginning of the zone list
+        zone->next = (t_zone *)default_zone;
+        if (zone->next) {
+            zone->next->prev = zone;
+            g_malloc_manager = zone;
+        }
+    }
     return zone;
 }
 
-
-void add_zone(t_zone **zones, t_zone *new_zone) {
-    if (!*zones) {
-        *zones = new_zone;
-    } else {
-        t_zone *current = *zones;
-        while (current->next) {
-            current = current->next;
-        }
-        current->next = new_zone;
+/*
+** Get the last zone in the list of zones.
+*/
+t_zone *get_last_zone(t_zone *zone) {
+    if (!zone) {
+        return NULL;
     }
+
+    while (zone->next) {
+        zone = zone->next;
+    }
+    return zone;
 }
 
-t_block *find_free_block(t_zone *zone, size_t size) {
-    t_block *current = zone->blocks;
-    while (current && !(current->free && current->size >= size)) {
-        current = current->next;
+#include "malloc.h"
+
+/*
+** Adds a new empty block to the zone, linking it to the previous block if one exists.
+** Adjusts the zone's free size accordingly and returns a pointer to the new block's data area.
+*/
+void *append_empty_block(t_zone *zone, size_t size) {
+    t_block *new_block = (t_block *)zone_SHIFT(zone);
+    t_block *last_block = (zone->block_count) ? get_last_block(new_block) : NULL;
+
+    if (last_block) {
+        new_block = (t_block *)(BLOCK_SHIFT(last_block) + last_block->size);
+        last_block->next = new_block;
+        new_block->prev = last_block;
     }
-    return current;
+
+    setup_block(new_block, size);
+    zone->block_count++;
+    zone->free_size -= (size + sizeof(t_block));
+    
+    return BLOCK_SHIFT(new_block);
 }
 
+/*
+** Retrieves the system limit for data segment size.
+*/
+rlim_t get_system_limit(void) {
+    struct rlimit rpl;
+    if (getrlimit(RLIMIT_DATA, &rpl) < 0)
+        return (rlim_t)-1;
+    return rpl.rlim_max;
+}
 
-void split_block(t_block *block, size_t size) {
-    if (block->size > size + sizeof(t_block)) {
-        uintptr_t block_end = (uintptr_t)(block + 1) + size;
-        uintptr_t aligned_block_start = (block_end + 15) & ~15;
+size_t get_zone_type_from_block_size(const size_t size) {
+    if (size <= TINY)
+        return TINY_ZONE;
+    else if (size <= SMALL)
+        return SMALL_ZONE;
+    else
+        return LARGE_ZONE; 
+}
 
-        t_block *new_block = (t_block*)aligned_block_start;
-        new_block->size = block->size - (aligned_block_start - (uintptr_t)(block + 1)) - sizeof(t_block);
-        
-        // printf("Splitting block: Original size %zu\n", block->size);
-        // printf("New block size: %zu\n", new_block->size);
-        new_block->free = 1;
-        new_block->next = block->next;
+size_t get_zone_size_from_zone_type(e_zone zone_type) {
+    if (zone_type == TINY_ZONE)
+        return TINY_ZONE_SIZE;
+    else if (zone_type == SMALL_ZONE)
+        return SMALL_ZONE_SIZE;
+    else
+        return 0; 
+}
 
-        block->size = size;
-        block->next = new_block;
+/*
+** Creates a new zone of the appropriate size based on the block size and type.
+** Returns NULL if the allocation fails or exceeds system limits.
+*/
+t_zone *create_zone(e_zone zone_type, size_t block_size) {
+    size_t zone_size = get_zone_size_from_zone_type(zone_type);
+    if (zone_size == 0)
+        zone_size = block_size + sizeof(t_zone) + sizeof(t_block);
+    if (zone_size > get_system_limit()) return NULL;
+
+    t_zone *zone = mmap(NULL, zone_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+    if (zone == MAP_FAILED) return NULL;
+
+    ft_bzero(zone, sizeof(t_zone));
+    zone->type = zone_type;
+    zone->size = zone_size;
+    zone->free_size = zone_size - sizeof(t_zone);
+    
+    // log_detail(CREATING_ZONE);
+    return zone;
+}
+
+/*
+** Checks if the zone is the last one of its type that was preallocated.
+** Returns true if it is, false otherwise.
+*/
+bool is_last_preallocated_zone(const t_zone *zone) {
+    if (zone->type == LARGE_ZONE) return false;
+
+    t_zone *cur = g_malloc_manager;
+    int count = 0;
+    
+    while (cur) {
+        if (cur->type == zone->type) count++;
+        cur = cur->next;
+    }
+    
+    return (count == 1);
+}
+
+/*
+** Deletes the zone if it has no blocks and is not the last of its preallocated type.
+** Adjusts the zone list links and unmaps the zone's memory.
+*/
+void delete_empty_zone(t_zone *zone) {
+    if (zone->block_count > 0) return;
+
+    if (zone->prev) zone->prev->next = zone->next;
+    if (zone->next) zone->next->prev = zone->prev;
+    
+    if (!is_last_preallocated_zone(zone)) {
+        if (zone == g_malloc_manager) g_malloc_manager = zone->next;
+        munmap(zone, zone->size);
+        // log_detail(DELETING_ZONE);
     }
 }

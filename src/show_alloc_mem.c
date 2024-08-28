@@ -4,78 +4,59 @@ size_t print_block_list(t_block *block) {
     char *start_address;
     char *end_address;
     size_t total = 0;
-    size_t index = 0;
 
     while (block) {
-        start_address = (char *)block + BLOCK_OVERHEAD;
+        start_address = (char *)block + sizeof(t_block);
         end_address = start_address + block->size;
 
-        // Debug prints
-        // printf("Processing block #%zu at %p\n", index, (void *)block);
-        // printf("  Block start address: %p\n", (void *)start_address);
-        // printf("  Block end address: %p\n", (void *)end_address);
-        // printf("  Block size: %zu\n", block->size);
-        // printf("  Block free status: %d\n", block->free);
-
         if (!block->free) {
-            // Print block range and size
-            printf("%p - %p : %zu octets\n", (void *)start_address, (void *)end_address, block->size);
+            printf("0x%zx - 0x%zx : %zu octets\n",
+                (size_t)start_address, (size_t)end_address, block->size);
             total += block->size;
         }
-
-        // Debug logging for the next block
-        // if (block->next) {
-        //     printf("  Next block is at %p\n", (void *)block->next);
-        // } else {
-        //     printf("  No next block (end of list)\n");
-        // }
-
-        // Move to the next block
         block = block->next;
-        index++;
     }
-
     return total;
 }
 
-// void print_zone(const char *name, t_zone *zone) {
-//     printf("%s : %p\n", name, (void *)zone);
-//     if (zone->blocks) {
-//         size_t zone_total = print_block_list(zone->blocks);
-//         printf("Zone total : %zu octets\n", zone_total);
-//     }
-// }
+void print_zone_header(const char *name, t_zone *zone) {
+    printf("%s : 0x%zx\n", name, (size_t)zone);
+}
 
 void start_show_alloc_mem(void) {
-    printf("\n___SHOW MEMORY ALLOCATED___\n");
-    t_zone *zone;
+    t_zone *current_zone;
     size_t total = 0;
 
-    // Print TINY zones
-    zone = g_malloc_manager.tiny_zones;
-    while (zone) {
-        printf("\nTINY : %p\n", (void *)zone);
-        total += print_block_list(zone->blocks);
-        zone = zone->next;
+    // Print details for TINY zones
+    current_zone = g_malloc_manager.tiny_zones;
+    while (current_zone) {
+        print_zone_header("TINY", current_zone);
+        if (current_zone->blocks) {
+            total += print_block_list(current_zone->blocks);
+        }
+        current_zone = current_zone->next;
     }
 
-    // Print SMALL zones
-    zone = g_malloc_manager.small_zones;
-    while (zone) {
-        printf("\nSMALL : %p\n", (void *)zone);
-        total += print_block_list(zone->blocks);
-        zone = zone->next;
+    // Print details for SMALL zones
+    current_zone = g_malloc_manager.small_zones;
+    while (current_zone) {
+        print_zone_header("SMALL", current_zone);
+        if (current_zone->blocks) {
+            total += print_block_list(current_zone->blocks);
+        }
+        current_zone = current_zone->next;
     }
 
-    // Print LARGE zones
-    zone = g_malloc_manager.large_zones;
-    while (zone) {
-        printf("\nLARGE : %p\n", (void *)zone);
-        total += print_block_list(zone->blocks);
-        zone = zone->next;
+    // Print details for LARGE zones
+    current_zone = g_malloc_manager.large_zones;
+    while (current_zone) {
+        print_zone_header("LARGE", current_zone);
+        if (current_zone->blocks) {
+            total += print_block_list(current_zone->blocks);
+        }
+        current_zone = current_zone->next;
     }
 
-    // Print total memory usage
     printf("Total : %zu octets\n", total);
 }
 
