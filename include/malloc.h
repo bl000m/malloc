@@ -89,7 +89,7 @@ void	find_available_block(size_t size, t_zone **res_zone, t_block **res_block);
 t_block *get_last_block(t_block *block);
 rlim_t get_system_limit(void);
 e_zone get_zone_type_for_size(size_t size);
-size_t get_zone_size_from_block_size(size_t block_size);
+size_t calculate_zone_size(size_t block_size);
 void log_detail(int detail);
 // size_t get_zone_size_from_zone_type(e_zone zone_type);
 e_zone get_zone_type_from_block_size(const size_t size);
@@ -98,7 +98,6 @@ t_block	*get_last_block(t_block *block);
 t_zone *get_last_zone(t_zone *zone);
 void setup_block(t_block *block,  size_t size);
 // void *start_malloc(size_t size);
-size_t			get_zone_size_from_block_size(size_t size);
 t_zone *find_available_zone(const t_zone *zone_list, const e_zone zone_type, const size_t required_size);
 void *try_allocate_block(size_t size);
 void *allocate_and_clear_memory(size_t size);
@@ -114,14 +113,24 @@ t_zone *get_or_create_zone(size_t size);
 t_zone *find_existing_zone(size_t size, e_zone zone_type);
 t_zone *create_and_add_zone(e_zone zone_type, size_t size);
 void add_zone_to_list(t_zone *zone);
+bool is_valid_zone_size(size_t zone_size);
+t_zone *map_zone_memory(size_t zone_size);
+void initialize_zone(t_zone *zone, e_zone zone_type, size_t zone_size);
+int count_zones_of_type(e_zone type);
+bool is_only_one_zone_of_type(int count);
 
 // block
 bool is_block_suitable(const t_block *block, size_t size);
 t_block *find_suitable_block(t_zone *zone, size_t size); 
 void initialize_new_free_block_in_remaining_space(t_block **remaining_free_block, t_block *allocated_block, size_t requested_size);
 void update_allocated_block_and_zone_metadata(t_zone *zone, t_block *allocated_block, t_block *remaining_free_block, size_t requested_size);
+t_block *create_and_initialize_block(t_zone *zone, size_t size);
+void link_block_to_last(t_block *new_block, t_block *last_block);
+void update_zone_metadata(t_zone *zone, t_block *new_block);
 
-
+// deleting
+void unlink_zone_from_list(t_zone *zone);
+void remove_zone_from_memory(t_zone *zone);
 
 
 

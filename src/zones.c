@@ -20,6 +20,23 @@ t_zone *find_existing_zone(size_t size, e_zone zone_type)
 }
 
 
+/*
+** Find an available zone in the list that belongs to the specified zone type
+** and has enough free space to accommodate the required block size.
+*/
+t_zone *find_available_zone(const t_zone *zone_list, const e_zone zone_type, const size_t required_size) {
+    t_zone *zone = (t_zone *)zone_list;
+
+    while (zone) {
+        if (zone->type == zone_type && zone->free_size >= required_size) {
+            return zone;
+        }
+        zone = zone->next;
+    }
+    return NULL;
+}
+
+
 t_zone *create_and_add_zone(e_zone zone_type, size_t size) 
 {
     t_zone *zone = create_zone(zone_type, size);
