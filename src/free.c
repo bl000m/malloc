@@ -18,7 +18,7 @@ void free(void *ptr) {
 }
 
 t_zone *find_zone_for_block(t_block *block) {
-    t_zone *current_zone = g_malloc_manager.tiny_zones;
+    t_zone *current_zone = g_zone_list.tiny_zones;
     while (current_zone) {
         if (block >= (t_block *)((char *)current_zone + sizeof(t_zone)) &&
             block <= (t_block *)((char *)current_zone + current_zone->size)) {
@@ -27,7 +27,7 @@ t_zone *find_zone_for_block(t_block *block) {
         current_zone = current_zone->next;
     }
 
-    current_zone = g_malloc_manager.small_zones;
+    current_zone = g_zone_list.small_zones;
     while (current_zone) {
         if (block >= (t_block *)((char *)current_zone + sizeof(t_zone)) &&
             block <= (t_block *)((char *)current_zone + current_zone->size)) {
@@ -36,7 +36,7 @@ t_zone *find_zone_for_block(t_block *block) {
         current_zone = current_zone->next;
     }
 
-    current_zone = g_malloc_manager.large_zones;
+    current_zone = g_zone_list.large_zones;
     while (current_zone) {
         if (block >= (t_block *)((char *)current_zone + sizeof(t_zone)) &&
             block <= (t_block *)((char *)current_zone + current_zone->size)) {

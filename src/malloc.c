@@ -1,136 +1,76 @@
 #include "malloc.h"
 
-// Define global variable
-t_zone *g_malloc_manager = {0};
+t_zone *g_zone_list = {0};
 pthread_mutex_t g_malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// void	*malloc(size_t size)
-// {
-// 	void *res;
-// 	pthread_mutex_lock(&g_malloc_mutex);
-// 	// log_detail(MALLOC);
-// 	if ((res = start_malloc(size)))
-// 		ft_memset(res, 0xaa, size);
-// 	pthread_mutex_unlock(&g_malloc_mutex);
-// 	return (res);
-// }
 
-// void *start_malloc(size_t size) {
-//     t_zone *zone;
-//     t_block *block;
-//     void *memory_address_allocated;
+void *malloc(size_t size) 
+{
+    if (!validate_allocation_size(size)) return NULL;
 
-//     if (size <= 0) return NULL;
-
-//     // Ensure size is aligned
-//     size = (size + 15) & ~15;
-
-//     // Attempt to find and split an available block
-//     block = find_and_split_block_if_available(size);
-//     if (block) {
-//         return (BLOCK_SHIFT(block));
-//     }
-
-//     // Find or create a suitable zone
-//     zone = get_zone_for_needed_block((const size_t)size);
-//     if (!zone) {
-//         return NULL; // Return NULL if no zone could be created
-//     }
-
-//     // Allocate a block within the zone
-//     memory_address_allocated = append_empty_block(zone, size);
-//     if (!memory_address_allocated) {
-//         return NULL; // Return NULL if allocation within the zone failed
-//     }
-
-//     return memory_address_allocated;
-// }
-
-void *malloc(size_t size) {
-    void *res = NULL;
     pthread_mutex_lock(&g_malloc_mutex);
-
-    if (size > 0) {
-        size = ALIGN(size);  // Ensure size is aligned
-        t_block *block = find_and_split_block_if_available(size);
-        if (block) {
-            res = (void *)BLOCK_SHIFT(block);
-        } else {
-            t_zone *zone = get_or_create_zone(size);
-            if (zone) {
-                res = allocate_block_in_zone(zone, size);
-            }
-        }
-        if (res) {
-            ft_memset(res, 0xaa, size);  // Optionally initialize memory
-        }
-    }
-
+    size = ALIGN(size);
+    void *memory_address_allocated = try_allocate_block(size);
+    clear_memory_contents(memory_address_allocated, size);
     pthread_mutex_unlock(&g_malloc_mutex);
-    return res;
-}
 
-t_zone *get_or_create_zone(size_t size) {
-    t_zone *default_zone = g_malloc_manager;
-    e_zone zone_type = get_zone_type_from_block_size(size);
-    t_zone *zone = find_available_zone(default_zone, zone_type, size + sizeof(t_block));
-    if (!zone) {
-        zone = create_zone(zone_type, size);
-        if (zone) {
-            zone->next = g_malloc_manager;
-            if (g_malloc_manager) {
-                g_malloc_manager->prev = zone;
-            }
-            g_malloc_manager = zone;
-        }
-    }
-    return zone;
+    return memory_address_allocated;
 }
 
 
+void *try_allocate_block(size_t size) 
+{
+    t_block *block = find_and_split_block_if_available(size);
+    if (block) return address_after_metadata(block);
 
-void find_available_block(size_t size, t_zone **res_zone, t_block **res_block) {
-    t_zone *zone;
-    t_block *block;
-    e_zone type;
+    t_zone *zone = get_or_create_zone(size);
+    if (!zone) return NULL;
 
-    zone = g_malloc_manager;
-    type = get_zone_type_from_block_size(size);
-    while (zone) {
-        block = (t_block *)ZONE_SHIFT(zone);
-        while (zone->type == type && block) {
-            if (block->free && (block->size >= size + sizeof(t_block))) {
-                *res_zone = zone;
-                *res_block = block;
+    return allocate_block_in_zone(zone, size);
+}
+
+
+/* ** Finds an available block and zone for the given size ** */
+void find_available_block(size_t size, t_zone **found_zone, t_block **found_block) 
+{
+    e_zone target_type = get_zone_type_from_block_size(size);
+    t_zone *current_zone = g_zone_list;
+
+    while (current_zone) 
+    {
+        if (current_zone->type == target_type) 
+        {
+            *found_block = find_suitable_block(current_zone, size);
+            if (*found_block) 
+            {
+                *found_zone = current_zone;
                 return;
             }
-            block = block->next;
         }
-        zone = zone->next;
+        current_zone = current_zone->next;
     }
-    *res_zone = NULL;
-    *res_block = NULL;
 }
 
-t_block *find_and_split_block_if_available(size_t size) {
-    t_block *block;
-    t_zone *zone;
+/* ** Finds and splits the block if available ** */
+t_block *find_and_split_block_if_available(size_t size) 
+{
+    t_block *block = NULL;
+    t_zone *zone = NULL;
 
-    // Find an available block of the requested size
     find_available_block(size, &zone, &block);
 
-    if (block && zone) {
+    if (block) 
         split_block_and_create_free_block(block, size, zone);
-        return block;
-    }
-    return NULL;
+
+    return block;
 }
+
 
 void split_block_and_create_free_block(t_block *block, size_t size, t_zone *zone) {
     t_block *free_block;
 
     // Calculate the position of the new free block
-    free_block = BLOCK_SHIFT(block) + size;
+    free_block = SKIP_BLOCK_METADATA(block) + size;
 
     // Set up the new free block with the remaining space
     setup_block(free_block, block->next - free_block);
@@ -177,7 +117,7 @@ t_zone *get_zone_for_needed_block(const size_t size) {
     e_zone zone_type;
     t_zone *zone;
 
-    default_zone = g_malloc_manager;
+    default_zone = g_zone_list;
     zone_type = get_zone_type_from_block_size(size);
     zone = find_available_zone(default_zone, zone_type, size + sizeof(t_block));
 
@@ -192,7 +132,7 @@ t_zone *get_zone_for_needed_block(const size_t size) {
         if (zone->next) {
             zone->next->prev = zone;
         }
-        g_malloc_manager = zone;
+        g_zone_list = zone;
     }
     return zone;
 }
@@ -223,13 +163,13 @@ void *allocate_block_in_zone(t_zone *zone, size_t size)
 	t_block	*new_block;
 	t_block	*last_block;
 
-	new_block = (t_block *)ZONE_SHIFT(zone);
+	new_block = (t_block *)SKIP_ZONE_METADATA(zone);
 	last_block = NULL;
 	if (zone->block_count)
 	{
 		last_block = get_last_block(new_block);
 		new_block =
-			(t_block *)(BLOCK_SHIFT(last_block) + last_block->size);
+			(t_block *)(SKIP_BLOCK_METADATA(last_block) + last_block->size);
 	}
 	setup_block(new_block, size);
 	if (zone->block_count)
@@ -239,7 +179,7 @@ void *allocate_block_in_zone(t_zone *zone, size_t size)
 	}
 	zone->block_count++;
 	zone->free_size -= (new_block->size + sizeof(t_block));
-	return ((void *)BLOCK_SHIFT(new_block));
+	return ((void *)SKIP_BLOCK_METADATA(new_block));
 }
 
 
@@ -265,15 +205,6 @@ e_zone get_zone_type_from_block_size(const size_t size) {
     else
         return LARGE_ZONE;
 }
-
-// size_t get_zone_size_from_zone_type(e_zone zone_type) {
-//     if (zone_type == TINY_ZONE)
-//         return TINY_ZONE_SIZE;
-//     else if (zone_type == SMALL_ZONE)
-//         return SMALL_ZONE_SIZE;
-//     else
-//         return 0;
-// }
 
 size_t			get_zone_size_from_block_size(size_t size)
 {
@@ -316,7 +247,7 @@ t_zone *create_zone(e_zone zone_type, size_t block_size) {
 bool is_last_preallocated_zone(const t_zone *zone) {
     if (zone->type == LARGE_ZONE) return false;
 
-    t_zone *cur = g_malloc_manager;
+    t_zone *cur = g_zone_list;
     int count = 0;
 
     while (cur) {
@@ -338,7 +269,7 @@ void delete_empty_zone(t_zone *zone) {
     if (zone->next) zone->next->prev = zone->prev;
 
     if (!is_last_preallocated_zone(zone)) {
-        if (zone == g_malloc_manager) g_malloc_manager = zone->next;
+        if (zone == g_zone_list) g_zone_list = zone->next;
         munmap(zone, zone->size);
         // log_detail(DELETING_ZONE);
     }

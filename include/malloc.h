@@ -28,8 +28,11 @@
 #define TINY_ZONE_SIZE (PAGE_SIZE * (((TINY + ALIGNMENT - 1 + MIN_BLOCK_SIZE) * 100 + PAGE_SIZE - 1) / PAGE_SIZE))
 #define SMALL_ZONE_SIZE (PAGE_SIZE * (((SMALL + ALIGNMENT - 1 + MIN_BLOCK_SIZE) * 100 + PAGE_SIZE - 1) / PAGE_SIZE))
 
-# define ZONE_SHIFT(start) ((void *)start + sizeof(t_zone))
-# define BLOCK_SHIFT(start) ((void *)start + sizeof(t_block))
+// # define ZONE_SHIFT(start) ((void *)start + sizeof(t_zone))
+// # define BLOCK_SHIFT(start) ((void *)start + sizeof(t_block))
+#define SKIP_ZONE_METADATA(ptr) ((void *)((char *)(ptr) + sizeof(t_zone)))
+#define SKIP_BLOCK_METADATA(ptr) ((void *)((char *)(ptr) + sizeof(t_block)))
+
 
 
 typedef enum e_zone {
@@ -54,7 +57,7 @@ typedef struct s_zone {
     size_t free_size;
 } t_zone;
 
-extern t_zone *g_malloc_manager;
+extern t_zone *g_zone_list;
 extern pthread_mutex_t g_malloc_mutex;
 
 // Prototypes
@@ -96,8 +99,25 @@ t_zone *get_last_zone(t_zone *zone);
 void setup_block(t_block *block,  size_t size);
 // void *start_malloc(size_t size);
 size_t			get_zone_size_from_block_size(size_t size);
-t_zone *get_or_create_zone(size_t size);
 t_zone *find_available_zone(const t_zone *zone_list, const e_zone zone_type, const size_t required_size);
+void *try_allocate_block(size_t size);
+
+
+// utils
+void clear_memory_contents(void *ptr, size_t size);
+bool validate_allocation_size(size_t size);
+void *address_after_metadata(t_block *block);
+
+// zone
+t_zone *get_or_create_zone(size_t size);
+t_zone *find_existing_zone(size_t size, e_zone zone_type);
+t_zone *create_and_add_zone(e_zone zone_type, size_t size);
+void add_zone_to_list(t_zone *zone);
+
+// block
+bool is_block_suitable(const t_block *block, size_t size);
+t_block *find_suitable_block(t_zone *zone, size_t size); 
+
 
 
 

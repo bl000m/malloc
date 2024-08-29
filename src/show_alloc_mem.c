@@ -49,7 +49,7 @@ void start_show_alloc_mem(void)
     t_zone  *zone;
     size_t  total = 0;
 
-    zone = g_malloc_manager;
+    zone = g_zone_list;
     while (zone)
     {
         if (zone->type == TINY_ZONE)
