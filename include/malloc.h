@@ -47,20 +47,12 @@ typedef struct s_block {
 
 typedef struct s_zone {
     size_t size;
-    t_block *blocks;
     struct s_zone *prev;
     struct s_zone *next;
     e_zone type;
     size_t block_count;
     size_t free_size;
 } t_zone;
-
-// typedef struct s_malloc_manager {
-//     t_zone *tiny_zones;
-//     t_zone *small_zones;
-//     t_zone *large_zones;
-//     int initialized;
-// } t_malloc_manager;
 
 extern t_zone *g_malloc_manager;
 extern pthread_mutex_t g_malloc_mutex;
@@ -96,12 +88,17 @@ rlim_t get_system_limit(void);
 e_zone get_zone_type_for_size(size_t size);
 size_t get_zone_size_from_block_size(size_t block_size);
 void log_detail(int detail);
-size_t get_zone_size_from_zone_type(e_zone zone_type);
-size_t get_zone_type_from_block_size(const size_t size);
-void *append_empty_block(t_zone *zone, size_t size);
+// size_t get_zone_size_from_zone_type(e_zone zone_type);
+e_zone get_zone_type_from_block_size(const size_t size);
+void *allocate_block_in_zone(t_zone *zone, size_t size);
 t_block	*get_last_block(t_block *block);
 t_zone *get_last_zone(t_zone *zone);
-void setup_block(t_block *block, t_block *prev, t_block *next, size_t size, bool free);
+void setup_block(t_block *block,  size_t size);
+// void *start_malloc(size_t size);
+size_t			get_zone_size_from_block_size(size_t size);
+t_zone *get_or_create_zone(size_t size);
+t_zone *find_available_zone(const t_zone *zone_list, const e_zone zone_type, const size_t required_size);
+
 
 
 #endif // MALLOC_H
