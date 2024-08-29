@@ -82,7 +82,7 @@ void cleanup(void);
 
 t_block *find_and_split_block_if_available(size_t size);
 t_zone *get_zone_for_needed_block(const size_t size);
-void split_block_and_create_free_block(t_block *block, size_t size, t_zone *zone);
+void split_block_and_create_remaining_free_block(t_block *allocated_block, size_t requested_size, t_zone *zone);
 t_zone *create_zone(e_zone zone_type, size_t block_size);
 void delete_empty_zone(t_zone *zone);
 void	find_available_block(size_t size, t_zone **res_zone, t_block **res_block);
@@ -101,6 +101,7 @@ void setup_block(t_block *block,  size_t size);
 size_t			get_zone_size_from_block_size(size_t size);
 t_zone *find_available_zone(const t_zone *zone_list, const e_zone zone_type, const size_t required_size);
 void *try_allocate_block(size_t size);
+void *allocate_and_clear_memory(size_t size);
 
 
 // utils
@@ -117,6 +118,9 @@ void add_zone_to_list(t_zone *zone);
 // block
 bool is_block_suitable(const t_block *block, size_t size);
 t_block *find_suitable_block(t_zone *zone, size_t size); 
+void initialize_new_free_block_in_remaining_space(t_block **remaining_free_block, t_block *allocated_block, size_t requested_size);
+void update_allocated_block_and_zone_metadata(t_zone *zone, t_block *allocated_block, t_block *remaining_free_block, size_t requested_size);
+
 
 
 

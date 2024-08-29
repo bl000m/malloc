@@ -4,18 +4,30 @@ t_zone *g_zone_list = {0};
 pthread_mutex_t g_malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
+
 void *malloc(size_t size) 
 {
     if (!validate_allocation_size(size)) return NULL;
 
     pthread_mutex_lock(&g_malloc_mutex);
-    size = ALIGN(size);
-    void *memory_address_allocated = try_allocate_block(size);
-    clear_memory_contents(memory_address_allocated, size);
+    void *memory_address_allocated = allocate_and_clear_memory(size);
     pthread_mutex_unlock(&g_malloc_mutex);
 
     return memory_address_allocated;
 }
+
+
+
+void *allocate_and_clear_memory(size_t size)
+{
+    size = ALIGN(size);
+    void *memory_address_allocated = try_allocate_block(size);
+    if (memory_address_allocated) {
+        clear_memory_contents(memory_address_allocated, size);
+    }
+    return memory_address_allocated;
+}
+
 
 
 void *try_allocate_block(size_t size) 
@@ -30,7 +42,7 @@ void *try_allocate_block(size_t size)
 }
 
 
-/* ** Finds an available block and zone for the given size ** */
+
 void find_available_block(size_t size, t_zone **found_zone, t_block **found_block) 
 {
     e_zone target_type = get_zone_type_from_block_size(size);
@@ -60,37 +72,21 @@ t_block *find_and_split_block_if_available(size_t size)
     find_available_block(size, &zone, &block);
 
     if (block) 
-        split_block_and_create_free_block(block, size, zone);
+        split_block_and_create_remaining_free_block(block, size, zone);
 
     return block;
 }
 
 
-void split_block_and_create_free_block(t_block *block, size_t size, t_zone *zone) {
-    t_block *free_block;
+void split_block_and_create_remaining_free_block(t_block *allocated_block, size_t requested_size, t_zone *zone) 
+{
+    t_block *remaining_free_block;
 
-    // Calculate the position of the new free block
-    free_block = SKIP_BLOCK_METADATA(block) + size;
+    initialize_new_free_block_in_remaining_space(&remaining_free_block, allocated_block, requested_size);
 
-    // Set up the new free block with the remaining space
-    setup_block(free_block, block->next - free_block);
-    free_block->free = true;
-	free_block->prev = block;
-	free_block->next = block->next;
-	zone->block_count++;
-	block->next = free_block;
-	block->size = size;
-	block->free = false;
-
-
+    update_allocated_block_and_zone_metadata(zone, allocated_block, remaining_free_block, requested_size);
 }
 
-void setup_block(t_block *block,  size_t size) {
-	block->prev = NULL;
-	block->next = NULL;
-	block->size = size;
-	block->free = false;
-}
 
 /*
 ** Find an available zone in the list that belongs to the specified zone type
