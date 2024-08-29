@@ -64,7 +64,7 @@ int main()
     if ((addr % 0x10) != 0)
         error("malloc returned unaligned address");
 
-    free(ptr);
+    // free(ptr);
     // ptr = malloc(8);
     // if ((uintptr_t)ptr != addr)
     //     error("malloc did not return the same address after free");

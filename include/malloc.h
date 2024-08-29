@@ -14,13 +14,23 @@
 #define TINY 128
 #define SMALL 1024
 
+// #define TINY ((size_t)(TINY_ZONE_SIZE / 128))
+// #define SMALL ((size_t)(SMALL_ZONE_SIZE / 128))
+
 #define PAGE_SIZE (sysconf(_SC_PAGESIZE))
 #define ALIGNMENT 16
 #define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
 #define MIN_BLOCK_SIZE (ALIGN(sizeof(t_block)))
 
+// # define TINY_ZONE_SIZE (4 * getpagesize())
+// # define SMALL_ZONE_SIZE (32 * getpagesize())
+
 #define TINY_ZONE_SIZE (PAGE_SIZE * (((TINY + ALIGNMENT - 1 + MIN_BLOCK_SIZE) * 100 + PAGE_SIZE - 1) / PAGE_SIZE))
 #define SMALL_ZONE_SIZE (PAGE_SIZE * (((SMALL + ALIGNMENT - 1 + MIN_BLOCK_SIZE) * 100 + PAGE_SIZE - 1) / PAGE_SIZE))
+
+# define ZONE_SHIFT(start) ((void *)start + sizeof(t_zone))
+# define BLOCK_SHIFT(start) ((void *)start + sizeof(t_block))
+
 
 typedef enum e_zone {
     TINY_ZONE,
@@ -80,17 +90,18 @@ t_zone *get_zone_for_needed_block(const size_t size);
 void split_block_and_create_free_block(t_block *block, size_t size, t_zone *zone);
 t_zone *create_zone(e_zone zone_type, size_t block_size);
 void delete_empty_zone(t_zone *zone);
-t_block *find_available_block(size_t size, t_zone **zone, t_block **block);
+void	find_available_block(size_t size, t_zone **res_zone, t_block **res_block);
 t_block *get_last_block(t_block *block);
-void setup_block(t_block *new_block, size_t size);
 rlim_t get_system_limit(void);
 e_zone get_zone_type_for_size(size_t size);
 size_t get_zone_size_from_block_size(size_t block_size);
 void log_detail(int detail);
-void *BLOCK_SHIFT(t_block *block);
-void *zone_SHIFT(t_zone *zone);
 size_t get_zone_size_from_zone_type(e_zone zone_type);
 size_t get_zone_type_from_block_size(const size_t size);
 void *append_empty_block(t_zone *zone, size_t size);
+t_block	*get_last_block(t_block *block);
+t_zone *get_last_zone(t_zone *zone);
+void setup_block(t_block *block, t_block *prev, t_block *next, size_t size, bool free);
+
 
 #endif // MALLOC_H

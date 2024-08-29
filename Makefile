@@ -18,7 +18,7 @@ LDFLAGS = -shared
 VPATH = $(SRC_DIR)
 
 # Source files
-SRCS = malloc.c #free.c show_alloc_mem.c realloc.c utils.c
+SRCS = malloc.c show_alloc_mem.c #free.c  realloc.c utils.c
 OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS))
 
 # Hosttype

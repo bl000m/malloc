@@ -18,3 +18,13 @@ void	ft_putstr_fd(char *s, int fd)
 		return ;
 	write(fd, s, ft_strlen(s));
 }
+
+void	ft_putstr(char const *s)
+{
+	int i;
+
+	i = 0;
+	while (s[i])
+		i++;
+	write(1, s, i);
+}

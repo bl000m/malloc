@@ -18,6 +18,7 @@
 # include <unistd.h>
 # include <stdarg.h>
 # include <stdint.h>
+# include <stdbool.h>
 
 # ifndef BUFFER_SIZE
 #  define BUFFER_SIZE 10
@@ -104,5 +105,9 @@ void	ft_free_list(t_gnl *record);
 void	clean_record(t_gnl **record);
 void	compose_line(char **line, t_gnl *record);
 void	read_stock(t_gnl **record, int fd);
+void	ft_itoa_base(size_t nb, char base, char length, bool prefix);
+void	ft_itoa_fd(size_t nb, char base, int fd, bool prefix);
+void	ft_putstr(char const *s);
+
 
 #endif
