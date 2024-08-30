@@ -50,3 +50,51 @@ void setup_block(t_block *block,  size_t size) {
 	block->size = size;
 	block->free = false;
 }
+
+
+t_block *position_block_after_last(t_block *last_block)
+{
+    return (t_block *)(SKIP_BLOCK_METADATA(last_block) + last_block->size);
+
+}
+
+
+
+void link_block_to_last(t_block *new_block, t_block *last_block) 
+{
+    new_block = (t_block *)(SKIP_BLOCK_METADATA(last_block) + last_block->size);
+    last_block->next = new_block;
+    new_block->prev = last_block;
+}
+
+
+t_block *get_last_block(t_block *block) 
+{
+    while (block->next)
+        block = block->next;
+    return block;
+}
+
+
+
+void locate_block_by_ptr(t_zone **founded_zone, t_block **founded_block, t_zone *zone, void *ptr)
+{
+    t_block *block;
+    while (zone)
+    {
+        block = (t_block *)SKIP_ZONE_METADATA(zone);
+        while (block)
+        {
+            if (SKIP_BLOCK_METADATA(block) == ptr)
+            {
+                *founded_zone = zone;
+                *founded_block = block;
+                return;
+            }
+            block = block->next;
+        }
+        zone = zone->next;
+    }
+    *founded_zone = NULL;
+    *founded_block = NULL;
+}

@@ -66,14 +66,13 @@ void *malloc(size_t size);
 void initialize_malloc_manager(void);
 void split_block(t_block *block, size_t size);
 t_block *find_free_block(t_zone *zone, size_t size);
-// t_zone *create_zone(size_t size, e_zone type);
 void add_zone(t_zone **zones, t_zone *new_zone);
 void *allocate_in_zone(t_zone **zones, size_t zone_size, size_t size);
 void *allocate_large_block(size_t size);
 void free(void *ptr);
 void coalesce_free_blocks(t_block *ptr);
 t_zone *find_zone_for_block(t_block *block);
-void *realloc(void *ptr, size_t size);
+void *realloc(void *old_pointer, size_t new_size);
 void _optional_abort(const char *message);
 void show_alloc_mem(void);
 void start_show_alloc_mem(void);
@@ -119,6 +118,14 @@ t_zone *map_zone_memory(size_t zone_size);
 void initialize_zone(t_zone *zone, e_zone zone_type, size_t zone_size);
 int count_zones_of_type(e_zone type);
 bool is_only_one_zone_of_type(int count);
+bool is_valid_zone_size(size_t zone_size); 
+t_zone *map_zone_memory(size_t zone_size); 
+void initialize_zone(t_zone *zone, e_zone zone_type, size_t zone_size); 
+bool is_last_preallocated_zone(const t_zone *zone); 
+int count_zones_of_type(e_zone type);
+bool is_only_one_zone_of_type(int count); 
+
+
 
 // block
 bool is_block_suitable(const t_block *block, size_t size);
@@ -134,6 +141,18 @@ t_block *position_block_after_last(t_block *last_block);
 // deleting
 void unlink_zone_from_list(t_zone *zone);
 void remove_zone_from_memory(t_zone *zone);
+
+// free
+void locate_block_by_ptr(t_zone **zone_out, t_block **block_out, t_zone *zone, void *ptr);
+t_block *merge_adjacent_blocks(t_zone *zone, t_block *block);
+void try_merge_with_next(t_zone *zone, t_block *block);
+t_block *try_merge_with_prev(t_zone *zone, t_block *block);
+void remove_last_block_if_needed(t_zone *zone, t_block *block);
+
+// realloc
+void *check_pointer_and_size(void *old_pointer, size_t new_size);
+void relocate_and_free(void *new_pointer, void *old_pointer, size_t move_size);
+
 
 
 

@@ -1,8 +1,8 @@
-// #include <stdbool.h>
-// #include <stdio.h>
-// #include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
-// #include "malloc.h"
+#include "malloc.h"
 
 // int main() {
 //   char *addr[20];
@@ -31,7 +31,7 @@
 
 //   addr[9] = realloc(addr[1], 156);
 //   show_alloc_mem();
-//   cleanup();
+// //   cleanup();
 //   return 0;
 // }
 
@@ -99,18 +99,19 @@ int main()
     free(ptr);
     show_alloc_mem();
 
-    // ptr = malloc(8);
-    // if ((uintptr_t)ptr != addr)
-    //     error("malloc did not return the same address after free");
+    ptr = malloc(8);
+    if ((uintptr_t)ptr != addr)
+        error("malloc did not return the same address after free");
 
-    // ptr = realloc(ptr, 1024 * 1024 * 128);
-    // if (ptr == NULL)
-    //     error("realloc returned NULL with the size of 128M");
+    ptr = realloc(ptr, 1024 * 1024 * 128);
+    if (ptr == NULL)
+        error("realloc returned NULL with the size of 128M");
+    show_alloc_mem();
 
-    // free(ptr);
-    // for (int i = 0; i < 16; i++)
-    //     free(malloc(sysconf(_SC_PAGESIZE) * 2 << i)); // try all sizes
-
-    // printf("malloc, free, realloc: OK\n");
+    free(ptr);
+    // for (int i = 0; i < 16; i++){
+    //     free(malloc(4096 * 2 << i)); // try all sizes
+    // }
+    printf("malloc, free, realloc: OK\n");
     return 0;
 }
