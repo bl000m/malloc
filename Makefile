@@ -17,7 +17,7 @@ HOSTTYPE := $(shell uname -m)_$(shell uname -s)
 endif
 
 # Source files and object files
-SRCS = malloc.c show_alloc_mem.c utils.c zones.c blocks.c free.c realloc.c
+SRCS = malloc.c free.c realloc.c zones.c blocks.c show_alloc_mem.c show_alloc_mem_hex.c utils.c 
 OBJS = $(patsubst %.c, $(OBJ_DIR)/%.o, $(SRCS))
 
 # Targets

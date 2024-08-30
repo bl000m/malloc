@@ -137,6 +137,10 @@ void    show_alloc_mem(void);
 void    print_zone_header(const char *zone_name, t_zone *zone);
 size_t  print_allocated_blocks(t_block *block);
 void    print_block_info(char *start, char *end, size_t size);
+void    show_alloc_mem_hex(void);
+size_t  dump_zone_memory(t_zone *zone);
+void    print_hex_line(char *start, size_t size);
+
 
 
 // void    log_detail(int detail);
