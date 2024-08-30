@@ -20,8 +20,7 @@ void *malloc(size_t size)
 
 void *allocate_and_clear_memory(size_t size)
 {
-    // size = ALIGN(size);
-    size = (size + 15) & ~15;
+    size = ALIGN(size);
     void *memory_address_allocated = try_allocate_block(size);
     if (memory_address_allocated) {
         clear_memory_contents(memory_address_allocated, size);
@@ -72,7 +71,7 @@ t_block *find_and_split_block_if_available(size_t size)
 
     find_available_block(size, &zone, &block);
 
-    if (block) 
+    if (block && zone) 
         split_block_and_create_remaining_free_block(block, size, zone);
 
     return block;
@@ -111,29 +110,57 @@ t_block *get_last_block(t_block *block) {
 }
 
 
+// void *allocate_block_in_zone(t_zone *zone, size_t size)
+// {
+// 	t_block	*new_block;
+// 	t_block	*last_block;
+
+// 	new_block = (t_block *)SKIP_ZONE_METADATA(zone);
+// 	last_block = NULL;
+// 	if (zone->block_count)
+// 	{
+// 		last_block = get_last_block(new_block);
+// 		new_block =
+// 			(t_block *)(SKIP_BLOCK_METADATA(last_block) + last_block->size);
+// 	}
+// 	setup_block(new_block, size);
+// 	if (zone->block_count)
+// 	{
+// 		last_block->next = new_block;
+// 		new_block->prev = last_block;
+// 	}
+// 	zone->block_count++;
+// 	zone->free_size -= (new_block->size + sizeof(t_block));
+// 	return ((void *)SKIP_BLOCK_METADATA(new_block));
+// }
+
 
 void *allocate_block_in_zone(t_zone *zone, size_t size) {
     t_block *new_block;
     t_block *last_block = NULL;
 
-    new_block = create_and_initialize_block(zone, size);
+    new_block = (t_block *)SKIP_ZONE_METADATA(zone); // if zone empty block allocated at beginning of zone
 
-    if (zone->block_count > 0) {
-        // If there are existing blocks, find the last one
+    if (zone->block_count) {
         last_block = get_last_block(new_block);
+        new_block = position_block_after_last(last_block);
+
+        // new_block = (t_block *)(SKIP_BLOCK_METADATA(last_block) + last_block->size);
         link_block_to_last(new_block, last_block);
     }
-
+    setup_block(new_block, size);
     update_zone_metadata(zone, new_block);
 
     return (void *)SKIP_BLOCK_METADATA(new_block);
 }
 
-t_block *create_and_initialize_block(t_zone *zone, size_t size) {
-    t_block *block = (t_block *)SKIP_ZONE_METADATA(zone);
-    setup_block(block, size);
-    return block;
+
+t_block *position_block_after_last(t_block *last_block)
+{
+    return (t_block *)(SKIP_BLOCK_METADATA(last_block) + last_block->size);
+
 }
+
 
 void link_block_to_last(t_block *new_block, t_block *last_block) {
     new_block = (t_block *)(SKIP_BLOCK_METADATA(last_block) + last_block->size);

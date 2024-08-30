@@ -127,6 +127,8 @@ void update_allocated_block_and_zone_metadata(t_zone *zone, t_block *allocated_b
 t_block *create_and_initialize_block(t_zone *zone, size_t size);
 void link_block_to_last(t_block *new_block, t_block *last_block);
 void update_zone_metadata(t_zone *zone, t_block *new_block);
+t_block *position_block_after_last(t_block *last_block);
+
 
 // deleting
 void unlink_zone_from_list(t_zone *zone);
