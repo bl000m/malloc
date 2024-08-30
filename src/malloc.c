@@ -89,19 +89,7 @@ void split_block_and_create_remaining_free_block(t_block *allocated_block, size_
 
 
 
-/*
-** Get the last zone in the list of zones.
-*/
-// t_zone *get_last_zone(t_zone *zone) {
-//     if (!zone) {
-//         return NULL;
-//     }
 
-//     while (zone->next) {
-//         zone = zone->next;
-//     }
-//     return zone;
-// }
 
 t_block *get_last_block(t_block *block) {
     while (block->next)
@@ -148,6 +136,9 @@ void *allocate_block_in_zone(t_zone *zone, size_t size) {
         // new_block = (t_block *)(SKIP_BLOCK_METADATA(last_block) + last_block->size);
         link_block_to_last(new_block, last_block);
     }
+    // else {
+    //     zone->block_count++;
+    // }
     setup_block(new_block, size);
     update_zone_metadata(zone, new_block);
 
@@ -245,6 +236,7 @@ void initialize_zone(t_zone *zone, e_zone zone_type, size_t zone_size) {
     zone->type = zone_type;
     zone->size = zone_size;
     zone->free_size = zone_size - sizeof(t_zone);
+    zone->block_count = 0;
 }
 
 
@@ -253,13 +245,34 @@ void initialize_zone(t_zone *zone, e_zone zone_type, size_t zone_size) {
 ** Checks if the zone is the last one of its type that was preallocated.
 ** Returns true if it is, false otherwise.
 */
-bool is_last_preallocated_zone(const t_zone *zone) {
-    if (zone->type == LARGE_ZONE) {
-        return false;
-    }
+// bool is_last_preallocated_zone(const t_zone *zone) {
+//     if (zone->type == LARGE_ZONE) {
+//         return false;
+//     }
 
-    int zone_type_count = count_zones_of_type(zone->type);
-    return is_only_one_zone_of_type(zone_type_count);
+//     int zone_type_count = count_zones_of_type(zone->type);
+//     return is_only_one_zone_of_type(zone_type_count);
+// }
+
+
+bool	is_last_preallocated_zone(t_zone *zone)
+{
+	t_zone			*zone_el;
+	e_zone	type;
+	int				i;
+
+	zone_el = g_zone_list;
+	type = zone->type;
+	if (type == LARGE_ZONE)
+		return (false);
+	i = 0;
+	while (zone_el)
+	{
+		if (zone_el->type == type)
+			i++;
+		zone_el = zone_el->next;
+	}
+	return (i == 1);
 }
 
 
@@ -286,16 +299,35 @@ bool is_only_one_zone_of_type(int count) {
 ** Deletes the zone if it has no blocks and is not the last of its preallocated type.
 ** Adjusts the zone list links and unmaps the zone's memory.
 */
-void delete_empty_zone(t_zone *zone) {
-    if (zone->block_count > 0) return;
+// void delete_empty_zone(t_zone *zone) {
+//     if (zone->block_count > 0) return;
 
-    unlink_zone_from_list(zone);
+//     unlink_zone_from_list(zone);
 
-    if (!is_last_preallocated_zone(zone)) {
-        remove_zone_from_memory(zone);
-    }
+//     if (!is_last_preallocated_zone(zone)) {
+//         if (zone == g_zone_list)
+//             g_zone_list = zone->next;
+//         remove_zone_from_memory(zone);
+//     }
+// }
+
+
+void			delete_empty_zone(t_zone *zone)
+{
+	if (zone->block_count)
+		return ;
+	if (zone->prev)
+		zone->prev->next = zone->next;
+	if (zone->next)
+		zone->next->prev = zone->prev;
+	if (!is_last_preallocated_zone(zone))
+	{
+		if (zone == g_zone_list)
+			g_zone_list = zone->next;
+		munmap(zone, zone->size);
+		// log_detail(zone_DELETE);
+	}
 }
-
 
 void unlink_zone_from_list(t_zone *zone) {
     if (zone->prev) {

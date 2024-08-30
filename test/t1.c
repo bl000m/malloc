@@ -56,38 +56,48 @@ void error(const char *msg)
 int main()
 {
     void	*t	= malloc(1);
-    void	*t0	= malloc(TINY);
-    void	*t00	= malloc(TINY);
-    void	*t000	= malloc(TINY);
+    void	*tb	= malloc(2);
+    void	*tc	= malloc(3);
+    void	*td	= malloc(4);
+    void	*te	= malloc(5);
+    void	*t0	= malloc(129);
+    void	*t00	= malloc(200);
+    void	*t000	= malloc(300);
     void	*t1	= malloc(SMALL);
     void	*t2	= malloc(SMALL + 1);
+    void	*t3	= malloc(SMALL + 2);
 
     // Should print mallocs in all categories (TINY, SMALL, LARGE)
     show_alloc_mem();
     // show_alloc_mem_hex();
     // show_heap_list();
-    free(t0);
 
     // t0 = malloc(TINY - sizeof(t_block));
     // show_alloc_mem();
-    // free(t0);
+    free(t);
+    free(t0);
     free(t00);
     free(t000);
     free(t1);
     free(t2);
+    free(tb);
+    free(tc);
+    free(td);
+    free(te);
+    free(t3);
     show_alloc_mem();
 
-    // void *ptr = malloc(8);
-    // uintptr_t addr = (uintptr_t)ptr;
+    void *ptr = malloc(8);
+    uintptr_t addr = (uintptr_t)ptr;
 
-    // show_alloc_mem();
-    // if (addr == 0)
-    //     error("malloc returned NULL");
-    // if ((addr % 0x10) != 0)
-    //     error("malloc returned unaligned address");
+    show_alloc_mem();
+    if (addr == 0)
+        error("malloc returned NULL");
+    if ((addr % 0x10) != 0)
+        error("malloc returned unaligned address");
 
-    // free(ptr);
-    // show_alloc_mem();
+    free(ptr);
+    show_alloc_mem();
 
     // ptr = malloc(8);
     // if ((uintptr_t)ptr != addr)

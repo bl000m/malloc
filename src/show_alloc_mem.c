@@ -1,81 +1,95 @@
 #include "malloc.h"
 
 /*
- * Print the list of blocks in the given zone.
- * Returns the total size of allocated blocks.
+ * Print a formatted address and size.
  */
-size_t print_block_list(t_block *block)
+static void print_block_info(char *start, char *end, size_t size)
 {
-    char    *start_address;
-    char    *end_address;
-    size_t  total = 0;
-
-    while (block)
-    {
-        start_address = (char *)((void *)block + sizeof(t_block));
-        end_address = start_address + block->size;
-        if (!block->free)
-        {
-            ft_itoa_base((size_t)start_address, 16, 9, true);
-            ft_putstr(" - ");
-            ft_itoa_base((size_t)end_address, 16, 9, true);
-            ft_putstr(" : ");
-            ft_itoa_base(block->size, 10, 0, false);
-            ft_putstr(" octets\n");
-            total += block->size;
-        }
-        block = block->next;
-    }
-    return total;
-}
-
-
-/*
- * Print the header for a zone.
- */
-static void print_zone_header(const char *name, t_zone *zone)
-{
-    ft_putstr(name);
+    ft_itoa_base((size_t)start, 16, 9, true);
+    ft_putstr(" - ");
+    ft_itoa_base((size_t)end, 16, 9, true);
     ft_putstr(" : ");
-    ft_itoa_base((size_t)zone, 16, 9, true);
-    ft_putstr("\n");
-}
-
-/*
- * Show the memory allocation for each zone.
- */
-void start_show_alloc_mem(void)
-{
-    t_zone  *zone;
-    size_t  total = 0;
-
-    zone = g_zone_list;
-    while (zone)
-    {
-        if (zone->type == TINY_ZONE)
-            print_zone_header("TINY", zone);
-        else if (zone->type == SMALL_ZONE)
-            print_zone_header("SMALL", zone);
-        else
-            print_zone_header("LARGE", zone);
-
-        if (zone->block_count)
-            total += print_block_list((t_block *)((void *)zone + sizeof(t_zone)));
-        
-        zone = zone->next;
-    }
-    ft_putstr("Total : ");
-    ft_itoa_base(total, 10, 0, false);
+    ft_itoa_base(size, 10, 0, false);
     ft_putstr(" octets\n");
 }
 
+/*
+ * Print allocated memory blocks and return the total size.
+ */
+static size_t print_allocated_blocks(t_block *block)
+{
+    size_t total_size = 0;
+
+    while (block)
+    {
+        if (!block->free)
+        {
+            char *start_address = (char *)((void *)block + sizeof(t_block));
+            char *end_address = start_address + block->size;
+            print_block_info(start_address, end_address, block->size);
+            total_size += block->size;
+        }
+        block = block->next;
+    }
+    return total_size;
+}
 
 /*
- * Thread-safe function to show all allocated memory.
+ * Print the header for a memory zone with color formatting.
+ */
+static void print_zone_header(const char *zone_name, t_zone *zone)
+{
+    ft_putstr(GREEN);
+    ft_putstr(zone_name);
+    ft_putstr(" : ");
+    ft_itoa_base((size_t)zone, 16, 9, true);
+    ft_putstr(RESET_COLOR);
+}
+
+/*
+ * Check if all blocks in the zone are free.
+ */
+static bool are_blocks_free(t_zone *zone)
+{
+    t_block *block = (t_block *)((void *)zone + sizeof(t_zone));
+
+    while (block)
+    {
+        if (!block->free)
+            return false;
+        block = block->next;
+    }
+    return true;
+}
+
+/*
+ * Show memory allocations in each zone.
  */
 void show_alloc_mem(void)
 {
     pthread_mutex_lock(&g_malloc_mutex);
-    start_show_alloc_mem();
+    t_zone *zone = g_zone_list;
+    size_t total_allocated = 0;
+
+    ft_putstr("\n\nALLOCATED MEMORY RECAP\n**********************\n");
+
+    while (zone)
+    {
+        if (!are_blocks_free(zone))
+        {
+            switch (zone->type)
+            {
+                case TINY_ZONE: print_zone_header("TINY", zone); break;
+                case SMALL_ZONE: print_zone_header("SMALL", zone); break;
+                case LARGE_ZONE: print_zone_header("LARGE", zone); break;
+            }
+            total_allocated += print_allocated_blocks((t_block *)((void *)zone + sizeof(t_zone)));
+        }
+        zone = zone->next;
+    }
+
+    ft_putstr("Total : ");
+    ft_itoa_base(total_allocated, 10, 0, false);
+    ft_putstr(" octets\n");
     pthread_mutex_unlock(&g_malloc_mutex);
 }

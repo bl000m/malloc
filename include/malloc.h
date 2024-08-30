@@ -33,7 +33,8 @@
 #define SKIP_ZONE_METADATA(ptr) ((void *)((char *)(ptr) + sizeof(t_zone)))
 #define SKIP_BLOCK_METADATA(ptr) ((void *)((char *)(ptr) + sizeof(t_block)))
 
-
+#define GREEN "\033[0;32m"
+#define RESET_COLOR "\033[0m\n"
 
 typedef enum e_zone {
     TINY_ZONE,
