@@ -98,3 +98,17 @@ void locate_block_by_ptr(t_zone **founded_zone, t_block **founded_block, t_zone 
     *founded_zone = NULL;
     *founded_block = NULL;
 }
+
+
+bool are_blocks_free(t_zone *zone)
+{
+    t_block *block = (t_block *)((void *)zone + sizeof(t_zone));
+
+    while (block)
+    {
+        if (!block->free)
+            return false;
+        block = block->next;
+    }
+    return true;
+}

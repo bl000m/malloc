@@ -8,10 +8,7 @@ t_zone *find_existing_zone(size_t size, e_zone zone_type)
 }
 
 
-/*
-** Find an available zone in the list that belongs to the specified zone type
-** and has enough free space to accommodate the required block size.
-*/
+
 t_zone *find_available_zone(const t_zone *zone_list, const e_zone zone_type, const size_t required_size) {
     t_zone *zone = (t_zone *)zone_list;
 
@@ -23,6 +20,7 @@ t_zone *find_available_zone(const t_zone *zone_list, const e_zone zone_type, con
     }
     return NULL;
 }
+
 
 
 t_zone *create_and_add_zone(e_zone zone_type, size_t size) 
@@ -38,11 +36,6 @@ t_zone *create_and_add_zone(e_zone zone_type, size_t size)
 
 
 
-
-/*
-** Creates a new zone of the appropriate size based on the block size and type.
-** Returns NULL if the allocation fails or exceeds system limits.
-*/
 t_zone *create_zone(e_zone zone_type, size_t block_size) 
 {
     size_t zone_size = calculate_zone_size(block_size);
@@ -88,10 +81,6 @@ void initialize_zone(t_zone *zone, e_zone zone_type, size_t zone_size)
 
 
 
-/*
-** Checks if the zone is the last one of its type that was preallocated.
-** Returns true if it is, false otherwise.
-*/
 bool is_last_preallocated_zone(const t_zone *zone) 
 {
     if (zone->type == LARGE_ZONE) {
@@ -101,7 +90,6 @@ bool is_last_preallocated_zone(const t_zone *zone)
     int zone_type_count = count_zones_of_type(zone->type);
     return is_only_one_zone_of_type(zone_type_count);
 }
-
 
 
 
@@ -129,7 +117,6 @@ bool is_only_one_zone_of_type(int count)
 
 
 
-
 void add_zone_to_list(t_zone *zone) 
 {
     zone->next = g_zone_list;
@@ -141,11 +128,6 @@ void add_zone_to_list(t_zone *zone)
 
 
 
-
-/*
-** Deletes the zone if it has no blocks and is not the last of its preallocated type.
-** Adjusts the zone list links and unmaps the zone's memory.
-*/
 void delete_empty_zone(t_zone *zone) 
 {
     if (zone->block_count > 0) return;
@@ -170,7 +152,6 @@ void unlink_zone_from_list(t_zone *zone)
         zone->next->prev = zone->prev;
     }
 
-    // Handle the case where the zone is the head of the list
     if (zone == g_zone_list) {
         g_zone_list = zone->next;
     }
@@ -185,6 +166,7 @@ void remove_zone_from_memory(t_zone *zone)
         // log_detail(DELETING_ZONE);
     }
 }
+
 
 
 void update_zone_metadata(t_zone *zone, t_block *new_block) 

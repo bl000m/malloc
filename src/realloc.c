@@ -1,7 +1,6 @@
 #include "malloc.h"
 
 
-
 void *realloc(void *old_pointer, size_t new_size)
 {
     pthread_mutex_lock(&g_malloc_mutex);
@@ -30,6 +29,8 @@ void *realloc(void *old_pointer, size_t new_size)
 
 	return new_pointer;
 }
+
+
 
 void *check_pointer_and_size(void *old_pointer, size_t new_size) 
 {

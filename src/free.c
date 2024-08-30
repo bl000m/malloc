@@ -30,6 +30,8 @@ t_block *merge_adjacent_blocks(t_zone *zone, t_block *block)
     return try_merge_with_prev(zone, block);
 }
 
+
+
 void try_merge_with_next(t_zone *zone, t_block *block)
 {
     if (block->next && block->next->free)
@@ -41,6 +43,8 @@ void try_merge_with_next(t_zone *zone, t_block *block)
         zone->block_count--;
     }
 }
+
+
 
 t_block *try_merge_with_prev(t_zone *zone, t_block *block)
 {
@@ -55,6 +59,7 @@ t_block *try_merge_with_prev(t_zone *zone, t_block *block)
     }
     return NULL;
 }
+
 
 
 void remove_last_block_if_needed(t_zone *zone, t_block *block)
