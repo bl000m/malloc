@@ -70,7 +70,7 @@ void add_zone(t_zone **zones, t_zone *new_zone);
 void *allocate_in_zone(t_zone **zones, size_t zone_size, size_t size);
 void *allocate_large_block(size_t size);
 void free(void *ptr);
-void coalesce_free_blocks(t_zone *zone);
+void coalesce_free_blocks(t_block *ptr);
 t_zone *find_zone_for_block(t_block *block);
 void *realloc(void *ptr, size_t size);
 void _optional_abort(const char *message);

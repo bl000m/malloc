@@ -20,7 +20,8 @@ void *malloc(size_t size)
 
 void *allocate_and_clear_memory(size_t size)
 {
-    size = ALIGN(size);
+    // size = ALIGN(size);
+    size = (size + 15) & ~15;
     void *memory_address_allocated = try_allocate_block(size);
     if (memory_address_allocated) {
         clear_memory_contents(memory_address_allocated, size);
@@ -110,46 +111,19 @@ t_block *get_last_block(t_block *block) {
 }
 
 
-// void *allocate_block_in_zone(t_zone *zone, size_t size)
-// {
-// 	t_block	*new_block;
-// 	t_block	*last_block;
-
-// 	new_block = (t_block *)SKIP_ZONE_METADATA(zone);
-// 	last_block = NULL;
-// 	if (zone->block_count)
-// 	{
-// 		last_block = get_last_block(new_block);
-// 		new_block =
-// 			(t_block *)(SKIP_BLOCK_METADATA(last_block) + last_block->size);
-// 	}
-// 	setup_block(new_block, size);
-// 	if (zone->block_count)
-// 	{
-// 		last_block->next = new_block;
-// 		new_block->prev = last_block;
-// 	}
-// 	zone->block_count++;
-// 	zone->free_size -= (new_block->size + sizeof(t_block));
-// 	return ((void *)SKIP_BLOCK_METADATA(new_block));
-// }
-
 
 void *allocate_block_in_zone(t_zone *zone, size_t size) {
     t_block *new_block;
     t_block *last_block = NULL;
 
-    // Create and initialize the new block
     new_block = create_and_initialize_block(zone, size);
 
     if (zone->block_count > 0) {
         // If there are existing blocks, find the last one
         last_block = get_last_block(new_block);
-        // Link the new block to the last block
         link_block_to_last(new_block, last_block);
     }
 
-    // Update zone metadata
     update_zone_metadata(zone, new_block);
 
     return (void *)SKIP_BLOCK_METADATA(new_block);
@@ -173,9 +147,6 @@ void update_zone_metadata(t_zone *zone, t_block *new_block) {
 }
 
 
-
-
-
 /*
 ** Retrieves the system limit for data segment size.
 */
@@ -196,17 +167,7 @@ e_zone get_zone_type_from_block_size(const size_t size) {
         return LARGE_ZONE;
 }
 
-// size_t			get_zone_size_from_block_size(size_t size)
-// {
-// 	e_zone zone_type;
 
-// 	zone_type = get_zone_type_from_block_size(size);
-// 	if (zone_type == TINY_ZONE)
-// 		return ((size_t)TINY_ZONE_SIZE);
-// 	else if (zone_type == SMALL_ZONE)
-// 		return ((size_t)SMALL_ZONE_SIZE);
-// 	return (size + sizeof(t_zone) + sizeof(t_block));
-// }
 
 size_t calculate_zone_size(size_t size) {
     e_zone zone_type = get_zone_type_from_block_size(size);
@@ -226,25 +187,6 @@ size_t calculate_zone_size(size_t size) {
 ** Creates a new zone of the appropriate size based on the block size and type.
 ** Returns NULL if the allocation fails or exceeds system limits.
 */
-// t_zone *create_zone(e_zone zone_type, size_t block_size) {
-    
-//     size_t zone_size = get_zone_size_from_block_size(block_size);
-    
-//     if (zone_size > get_system_limit()) return NULL;
-
-//     t_zone *zone = (t_zone *)mmap(NULL, zone_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
-//     if (zone == MAP_FAILED) return NULL;
-
-//     ft_bzero(zone, sizeof(t_zone));
-//     zone->type = zone_type;
-//     zone->size = zone_size;
-//     zone->free_size = zone_size - sizeof(t_zone);
-
-//     // log_detail(CREATING_ZONE);
-//     return zone;
-// }
-
-
 t_zone *create_zone(e_zone zone_type, size_t block_size) {
     size_t zone_size = calculate_zone_size(block_size);
 
@@ -284,21 +226,6 @@ void initialize_zone(t_zone *zone, e_zone zone_type, size_t zone_size) {
 ** Checks if the zone is the last one of its type that was preallocated.
 ** Returns true if it is, false otherwise.
 */
-// bool is_last_preallocated_zone(const t_zone *zone) {
-//     if (zone->type == LARGE_ZONE) return false;
-
-//     t_zone *cur = g_zone_list;
-//     int count = 0;
-
-//     while (cur) {
-//         if (cur->type == zone->type) count++;
-//         cur = cur->next;
-//     }
-
-//     return (count == 1);
-// }
-
-
 bool is_last_preallocated_zone(const t_zone *zone) {
     if (zone->type == LARGE_ZONE) {
         return false;
@@ -335,11 +262,30 @@ bool is_only_one_zone_of_type(int count) {
 void delete_empty_zone(t_zone *zone) {
     if (zone->block_count > 0) return;
 
-    if (zone->prev) zone->prev->next = zone->next;
-    if (zone->next) zone->next->prev = zone->prev;
+    unlink_zone_from_list(zone);
 
     if (!is_last_preallocated_zone(zone)) {
-        if (zone == g_zone_list) g_zone_list = zone->next;
+        remove_zone_from_memory(zone);
+    }
+}
+
+
+void unlink_zone_from_list(t_zone *zone) {
+    if (zone->prev) {
+        zone->prev->next = zone->next;
+    }
+    if (zone->next) {
+        zone->next->prev = zone->prev;
+    }
+
+    // Handle the case where the zone is the head of the list
+    if (zone == g_zone_list) {
+        g_zone_list = zone->next;
+    }
+}
+
+void remove_zone_from_memory(t_zone *zone) {
+    if (!is_last_preallocated_zone(zone)) {
         munmap(zone, zone->size);
         // log_detail(DELETING_ZONE);
     }

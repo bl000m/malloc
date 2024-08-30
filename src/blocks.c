@@ -26,7 +26,9 @@ void initialize_new_free_block_in_remaining_space(t_block **remaining_free_block
 {
     *remaining_free_block = (t_block *)((char *)SKIP_BLOCK_METADATA(allocated_block) + requested_size);
 
-    size_t remaining_size = allocated_block->next - *remaining_free_block;
+    // size_t remaining_size = allocated_block->next - *remaining_free_block;
+    size_t remaining_size = allocated_block->size - (requested_size + sizeof(t_block));
+
     setup_block(*remaining_free_block, remaining_size);
     (*remaining_free_block)->free = true;
     (*remaining_free_block)->prev = allocated_block;
