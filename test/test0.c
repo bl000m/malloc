@@ -18,8 +18,8 @@ int main() {
 //   addr[6] = malloc(589);
 //   addr[7] = malloc(400);
 //   addr[8] = malloc(400);
-//   show_alloc_mem();
-  show_alloc_mem_hex();
+  show_alloc_mem();
+//   show_alloc_mem_hex();
 
 //   free(addr[0]);
 //   free(addr[3]);

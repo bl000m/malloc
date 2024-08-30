@@ -50,6 +50,7 @@ t_zone *create_zone(e_zone zone_type, size_t block_size)
     }
 
     initialize_zone(zone, zone_type, zone_size);
+    log_detail(ZONE_CREATED);
     return zone;
 }
 
@@ -163,7 +164,7 @@ void remove_zone_from_memory(t_zone *zone)
 {
     if (!is_last_preallocated_zone(zone)) {
         munmap(zone, zone->size);
-        // log_detail(DELETING_ZONE);
+        log_detail(ZONE_DELETED);
     }
 }
 

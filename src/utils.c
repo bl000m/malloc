@@ -70,3 +70,41 @@ size_t calculate_zone_size(size_t size)
             return size + sizeof(t_zone) + sizeof(t_block);
     }
 }
+
+
+
+void	log_detail(t_detail_event event)
+{
+	int fd;
+
+	if (getenv("LOGGING"))
+	{
+		fd = open(LOGS_PATH, O_CREAT | O_WRONLY | O_APPEND, 0644);
+		if (fd == -1){
+            perror("open");
+			return;
+        }
+
+		switch (event) {
+			case MALLOC:
+				ft_putstr_fd("Malloc call\n", fd);
+				break;
+			case FREE:
+				ft_putstr_fd("Free call\n", fd);
+				break;
+			case REALLOC:
+				ft_putstr_fd("Realloc call\n", fd);
+				break;
+			case ZONE_CREATED:
+				ft_putstr_fd("Created a zone\n", fd);
+				break;
+			case ZONE_DELETED:
+				ft_putstr_fd("Deleted a zone\n", fd);
+				break;
+			default:
+				ft_putstr_fd("Unknown event\n", fd);
+				break;
+		}
+		close(fd);
+	}
+}

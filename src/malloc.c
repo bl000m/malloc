@@ -9,6 +9,8 @@ void *malloc(size_t size)
 {
     if (!validate_allocation_size(size)) return NULL;
 
+    log_detail(MALLOC);
+
     pthread_mutex_lock(&g_malloc_mutex);
     void *memory_address_allocated = allocate_and_clear_memory(size);
     pthread_mutex_unlock(&g_malloc_mutex);

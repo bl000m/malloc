@@ -11,6 +11,7 @@ void	free(void *ptr)
     zone = g_zone_list;
     if (!ptr || !zone)
         return;
+    log_detail(FREE);
     locate_block_by_ptr(&zone, &block, zone, ptr);
     if (block && zone)
     {

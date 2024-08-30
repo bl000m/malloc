@@ -15,6 +15,7 @@ void *realloc(void *old_pointer, size_t new_size)
 	t_block	*block;
 	void	*new_pointer;
 
+    log_detail(REALLOC);
 	zone = g_zone_list;
 	locate_block_by_ptr(&zone, &block, zone, old_pointer);
 	if (!zone || !block)

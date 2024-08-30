@@ -9,7 +9,8 @@
 #include <libft.h>
 #include <sys/mman.h>      
 #include <sys/resource.h>  
-#include <stdbool.h>       
+#include <stdbool.h>     
+#include <fcntl.h>  
 
 
 /* Constants and Macros */
@@ -29,8 +30,18 @@
 #define GREEN "\033[0;32m"
 #define RESET_COLOR "\033[0m\n"
 
+#define LOGS_PATH "/tmp/ft_malloc.log"
+
 
 /* Data Structures */
+
+typedef enum	e_detail_event {
+	MALLOC,
+	FREE,
+	REALLOC,
+	ZONE_CREATED,
+	ZONE_DELETED
+} t_detail_event;
 
 typedef enum e_zone {
     TINY_ZONE,
@@ -140,7 +151,7 @@ void    print_block_info(char *start, char *end, size_t size);
 void    show_alloc_mem_hex(void);
 size_t  dump_zone_memory(t_zone *zone);
 void    print_hex_line(char *start, size_t size);
-
+void	log_detail(t_detail_event event);
 
 
 // void    log_detail(int detail);
