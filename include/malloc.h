@@ -89,6 +89,7 @@ int     count_zones_of_type(e_zone type);
 bool    is_only_one_zone_of_type(int count); 
 void    unlink_zone_from_list(t_zone *zone);
 void    remove_zone_from_memory(t_zone *zone);
+t_zone  *get_the_last_zone(t_zone *head);
 
 
 /* Block Management Functions */

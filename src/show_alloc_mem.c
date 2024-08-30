@@ -4,7 +4,7 @@
 void show_alloc_mem(void)
 {
     pthread_mutex_lock(&g_malloc_mutex);
-    t_zone *zone = g_zone_list;
+    t_zone *zone = get_the_last_zone(g_zone_list);
     size_t total_allocated = 0;
 
     ft_putstr("\n\nALLOCATED MEMORY RECAP\n**********************\n");
@@ -21,12 +21,13 @@ void show_alloc_mem(void)
             }
             total_allocated += print_allocated_blocks((t_block *)((void *)zone + sizeof(t_zone)));
         }
-        zone = zone->next;
+        zone = zone->prev;
     }
 
     ft_putstr("Total : ");
     ft_itoa_base(total_allocated, 10, 0, false);
     ft_putstr(" octets\n");
+
     pthread_mutex_unlock(&g_malloc_mutex);
 }
 
@@ -40,8 +41,6 @@ void print_zone_header(const char *zone_name, t_zone *zone)
     ft_itoa_base((size_t)zone, 16, 9, true);
     ft_putstr(RESET_COLOR);
 }
-
-
 
 size_t print_allocated_blocks(t_block *block)
 {
@@ -60,8 +59,6 @@ size_t print_allocated_blocks(t_block *block)
     }
     return total_size;
 }
-
-
 
 void print_block_info(char *start, char *end, size_t size)
 {

@@ -27,19 +27,16 @@ int main() {
   addr[0] = malloc(42);
   addr[3] = malloc(5);
   addr[5] = malloc(100);
-  printf("------------- s_a_m -------------\n");
   show_alloc_mem();
 
-  strncpy(addr[1], "Ceci est un test", 30);
-  printf("le contenu de la zone de 40 octets: |%s|\n", addr[1]);
+  strncpy(addr[1], "This is a test", 30);
+  printf("This is the content just written on addr[1]: |%s|\n", addr[1]);
 
   addr[9] = realloc(addr[1], 156);
-  printf("------------- s_a_m -------------\n");
   show_alloc_mem();
 
-  printf("le contenu de la zone de 40 octets devenu 156: |%s|\n", addr[9]);
-  printf("le contenu de l'ancienne zone mémoire de la zone de 40 octets"\
-      " devenu 156: |%s|\n",
+  printf("We reallocced 156 bytes on the 40 of addr[1] that becomes addr[9] but content is still what we strncpied into it: |%s|\n", addr[9]);
+  printf("in fact this is still the content of addr[1] before that someone allocate it again (it has been freed by realloc): |%s|\n",
       addr[1]);
   return 0;
 }

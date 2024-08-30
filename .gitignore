@@ -4,3 +4,4 @@ objects/
 .cache/
 .idea/
 .vscode/
+test*

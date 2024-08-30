@@ -174,3 +174,17 @@ void update_zone_metadata(t_zone *zone, t_block *new_block)
     zone->block_count++;
     zone->free_size -= (new_block->size + sizeof(t_block));
 }
+
+
+
+t_zone *get_the_last_zone(t_zone *head)
+{
+    t_zone *last_zone = head;
+    
+    while (last_zone && last_zone->next)
+    {
+        last_zone = last_zone->next;
+    }
+    
+    return last_zone;
+}

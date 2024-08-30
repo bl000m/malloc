@@ -31,7 +31,7 @@ FILE *file = fopen("example.txt", "r");
 if (file) {
     char buffer[100];
     while (fgets(buffer, sizeof(buffer), file)) {
-        printf("%s", buffer);
+        ft_printf("%s", buffer);
     }
     fclose(file);
 }
