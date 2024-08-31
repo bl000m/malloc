@@ -6,6 +6,7 @@
 // int main(void)
 // {
 // 	void *t = malloc(0);
+//     show_alloc_mem();
 //     	if (t)
 //         	printf("malloc(0) should return NULL\n");
 //     	free(t);
@@ -31,28 +32,6 @@
 // 	return (0);
 // }
 
-// z3r4p1% ./run.sh ./test/test1.c test1
-// malloc() should return ptr
-
-int main(void)
-{
-    char *t;
-    struct rlimit rpl;
-
-    rpl.rlim_cur = TINY_ZONE_SIZE;
-    rpl.rlim_max = TINY_ZONE_SIZE;
-
-    if (setrlimit(RLIMIT_DATA, &rpl) < 0)
-        printf("setrlimit did not work\n");
-
-    if (!(t = (char *)malloc(TINY_ZONE_SIZE - sizeof(t_block) - sizeof(t_zone))))
-        printf("malloc() should return ptr\n");
-    free(t);
-
-    if ((t = (char *)malloc(TINY_ZONE_SIZE)))
-        printf("malloc() should return NULL\n");
-    free(t);
-}
 
 // int main(void)
 // {

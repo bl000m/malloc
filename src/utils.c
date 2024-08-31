@@ -15,10 +15,21 @@ bool validate_allocation_size(size_t size)
     size_t aligned_size = (size + 15) & ~15;
     rlim_t system_limit = get_system_limit();
 
-    if (aligned_size <= 0 || aligned_size > system_limit) {
+    if (aligned_size <= 0 || aligned_size > system_limit || system_limit == 0) {
         return false;
     }
     return true;
+}
+
+
+
+rlim_t get_system_limit(void) 
+{
+    struct rlimit rpl;
+
+    if (getrlimit(RLIMIT_DATA, &rpl) < 0)
+        return 0;
+    return rpl.rlim_max;
 }
 
 
@@ -29,17 +40,6 @@ void *address_after_metadata(t_block *block)
         return (void *)SKIP_BLOCK_METADATA(block);
     }
     return NULL;
-}
-
-
-
-rlim_t get_system_limit(void) 
-{
-	struct rlimit rpl;
-
-	if (getrlimit(RLIMIT_DATA, &rpl) < 0)
-		return (-1);
-	return (rpl.rlim_max);
 }
 
 
@@ -77,7 +77,7 @@ void	log_detail(t_detail_event event)
 {
 	int fd;
 
-	if (getenv("LOGGING"))
+	if (getenv("DEBUGGING"))
 	{
 		fd = open(LOGS_PATH, O_CREAT | O_WRONLY | O_APPEND, 0644);
 		if (fd == -1){

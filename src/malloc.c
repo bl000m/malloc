@@ -7,7 +7,10 @@ pthread_mutex_t g_malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void *malloc(size_t size) 
 {
-    if (!validate_allocation_size(size)) return NULL;
+    if (!validate_allocation_size(size)){
+        pthread_mutex_unlock(&g_malloc_mutex);
+        return NULL;
+    } 
 
     log_detail(MALLOC);
 

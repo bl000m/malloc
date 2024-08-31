@@ -9,8 +9,10 @@ void	free(void *ptr)
 
 	pthread_mutex_lock(&g_malloc_mutex);
     zone = g_zone_list;
-    if (!ptr || !zone)
+    if (!ptr || !zone) {
+        pthread_mutex_unlock(&g_malloc_mutex); 
         return;
+    }
     log_detail(FREE);
     locate_block_by_ptr(&zone, &block, zone, ptr);
     if (block && zone)
